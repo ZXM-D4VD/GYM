@@ -3,37 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitFuel Pro</title>
+    <title>FitFuel Ultimate UI</title>
+    <!-- Canvas Confetti Library for Gamification -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
-        body { background: #0f172a; color: #f8fafc; padding: 15px; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 450px; background: #1e293b; border-radius: 16px; padding: 20px; position: relative; overflow: hidden; }
-        
-        /* Header & Nav Drawer */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: #38bdf8; width: auto; padding: 0; }
-        .drawer { position: absolute; top: 0; left: -100%; width: 80%; height: 100%; background: #0f172a; z-index: 10; transition: 0.3s ease; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
-        .drawer.active { left: 0; }
-        .close-btn { text-align: right; font-size: 20px; cursor: pointer; color: #ef4444; margin-bottom: 15px; }
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #38bdf8;
+            --accent: #818cf8;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
 
-        /* General UI Elements */
-        .card { background: #334155; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        h2 { font-size: 15px; color: #cbd5e1; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; margin: 5px 0 10px; outline: none; }
-        button { width: 100%; padding: 10px; background: #0284c7; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .badge { background: #0284c7; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
-        .alert { margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 12px; line-height: 1.4; display: none; }
-        .alert-warn { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; }
-        .alert-safe { background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; color: #86efac; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-gradient); color: #f8fafc; min-height: 100vh; padding: 15px; display: flex; justify-content: center; overflow-x: hidden; }
+        
+        .app-container { width: 100%; max-width: 450px; position: relative; }
+        
+        /* Glassmorphism Card Effect */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .glass-card:active { transform: scale(0.98); }
+
+        /* Navigation & Drawer */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .menu-btn { font-size: 24px; background: none; border: none; color: var(--primary); cursor: pointer; transition: transform 0.3s ease; }
+        .menu-btn:hover { transform: rotate(90deg); }
+        
+        .drawer {
+            position: fixed; top: 0; left: -100%; width: 80%; height: 100%;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px);
+            z-index: 100; transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 25px; box-shadow: 10px 0 30px rgba(0,0,0,0.8);
+        }
+        .drawer.active { left: 0; }
+        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 99; }
+        .drawer-overlay.active { display: block; }
+
+        /* Skeleton Loader UI */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* UI Form Elements */
+        h2 { font-size: 16px; color: #cbd5e1; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        input, select {
+            width: 100%; padding: 12px; border-radius: 12px;
+            border: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.6);
+            color: #fff; margin-bottom: 12px; outline: none; transition: border-color 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--primary); }
+        
+        button {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #0284c7, #6366f1);
+            color: #fff; border: none; border-radius: 12px; font-weight: bold;
+            cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }
+        button:active { transform: translateY(2px); }
+
+        /* Micro-Interactions & Badges */
+        .badge { background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .alert { margin-top: 12px; padding: 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; display: none; animation: fadeIn 0.4s ease; }
+        .alert-warn { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #fca5a5; }
+        .alert-safe { background: rgba(34, 197, 94, 0.15); border: 1px solid var(--success); color: #86efac; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
+<div class="drawer-overlay" id="overlay" onclick="toggleDrawer(false)"></div>
+
 <div class="app-container">
-    <!-- Header -->
+    <!-- Header with Dynamic Glass Menu -->
     <div class="header">
-        <h1>FitFuel Pro</h1>
+        <h1 style="font-size: 22px; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">FitFuel Ultimate</h1>
         <button class="menu-btn" onclick="toggleDrawer(true)">☰</button>
+    </div>
+
+    <!-- Slide Drawer Side Menu -->
+    <div class="drawer" id="drawer">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3>Menu & Tools</h3>
+            <span style="cursor:pointer; color:var(--danger); font-size:20px;" onclick="toggleDrawer(false)">✕</span>
+        </div>
+        
+        <div class="glass-card">
+            <h2>🍕 Smart Cheat Meal Calc</h2>
+            <select id="cheatFood">
+                <option value="280">Pizza (1 Slice - 280 kcal)</option>
+                <option value="540">Burger (1 Unit - 540 kcal)</option>
+                <option value="300">Samosa (2 Pcs - 300 kcal)</option>
+                <option value="450">Biryani (1 Bowl - 450 kcal)</option>
+            </select>
+            <button onclick="calcCheatBurn()">Calculate Burn Time</button>
+            <div id="cheatResult" class="alert alert-warn"></div>
+        </div>
+    </div>
+
+    <!-- Screen Time Card -->
+    <div class="glass-card">
+        <h2>📱 Live Screen Time <span id="screenTimer" class="badge">0m 0s</span></h2>
+        <p id="screenWarn" style="font-size: 11px; color: var(--danger); display:none; margin-top:5px;">⚠️ Limit cross ho gayi! Workout start karo.</p>
+    </div>
+
+    <!-- Health Tracker Card -->
+    <div class="glass-card">
+        <h2>💪 Weight & Protein Safety</h2>
+        <input type="number" id="weight" placeholder="Body Weight (kg)">
+        <input type="number" id="protein" placeholder="Daily Protein Intake (g)">
+        <button onclick="processHealthData()">Analyze & Save</button>
+        <div id="proteinResult" class="alert"></div>
+    </div>
+</div>
+
+<script>
+    // 1. Haptic Feedback Micro-interaction (If supported by device)
+    function triggerHaptic() {
+        if (navigator.vibrate) navigator.vibrate(40);
+    }
+
+    // 2. Confetti Effect Micro-interaction
+    function triggerConfetti() {
+        confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.8 }
+        });
+    }
+
+    // 3. Main App State & Engine
+    const App = {
+        state: {
+            weight: localStorage.getItem('weight') || '',
+            protein: localStorage.getItem('protein') || '',
+            screenSecs: parseInt(localStorage.getItem('screenSecs')) || 0
+        },
+        init() {
+            document.getElementById('weight').value = this.state.weight;
+            document.getElementById('protein').value = this.state.protein;
+            if(this.state.weight && this.state.protein) this.calcProtein(false);
+            this.startTimer();
+        },
+        save() {
+            localStorage.setItem('weight', this.state.weight);
+            localStorage.setItem('protein', this.state.protein);
+        },
+        startTimer() {
+            setInterval(() => {
+                this.state.screenSecs++;
+                localStorage.setItem('screenSecs', this.state.screenSecs);
+                const m = Math.floor(this.state.screenSecs / 60), s = this.state.screenSecs % 60;
+                document.getElementById('screenTimer').innerText = `${m}m ${s}s`;
+                if(m >= 30) document.getElementById('screenWarn').style.display = 'block';
+            }, 1000);
+        },
+        calcProtein(userTriggered = true) {
+            const w = parseFloat(this.state.weight), p = parseFloat(this.state.protein);
+            const box = document.getElementById('proteinResult');
+            if(!w || !p) return;
+            
+            const min = Math.round(w * 1.6), max = Math.round(w * 2.2);
+            box.style.display = 'block';
+            
+            if(p > max) {
+                box.className = 'alert alert-warn';
+                box.innerHTML = `⚠️ <b>Excess Protein Warning:</b> Weight (${w}kg) ke hisab se safe limit <b>${min}g-${max}g</b> hai. Extra protein digestion aur kidneys par strain daalta hai. Safe limit <b>${max}g</b> rakhein.`;
+            } else if(p < min) {
+                box.className = 'alert alert-warn';
+                box.innerHTML = `ℹ️ <b>Low Protein:</b> Muscle recovery ke liye daily kam se kam <b>${min}g</b> chahiye.`;
+            } else {
+                box.className = 'alert alert-safe';
+                box.innerHTML = `✅ <b>Optimal Intake:</b> Aapka intake (${p}g) safe range (${min}g-${max}g) me hai!`;
+                if(userTriggered) triggerConfetti();
+            }
+        }
+    };
+
+    // UI Handlers with Touch Gestures & Haptics
+    function toggleDrawer(open) {
+        triggerHaptic();
+        document.getElementById('drawer').classList.toggle('active', open);
+        document.getElementById('overlay').classList.toggle('active', open);
+    }
+
+    function processHealthData() {
+        triggerHaptic();
+        App.state.weight = document.getElementById('weight').value;
+        App.state.protein = document.getElementById('protein').value;
+        App.save();
+        App.calcProtein(true);
+    }
+
+    function calcCheatBurn() {
+        triggerHaptic();
+        const kcal = parseFloat(document.getElementById('cheatFood').value);
+        const w = parseFloat(App.state.weight) || 70;
+        const minsToBurn = Math.round(kcal / (0.0175 * 8 * w));
+        
+        const res = document.getElementById('cheatResult');
+        res.style.display = 'block';
+        res.innerHTML = `🔥 <b>${kcal} kcal</b> burn karne ke liye <b>${minsToBurn} minutes</b> running karna padega!`;
+    }
+
+    window.onload = () => App.init();
+</script>
+</body>
+</html>
     </div>
 
     <!-- Side Menu Drawer (Cheat Meal & Calorie Smart Calc) -->
